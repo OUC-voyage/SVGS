@@ -26,5 +26,6 @@
     │   │   ├── sparse/
     │   │       └──0/
     ...
-5. python render.py -s "AD-GS/waymo/$dataset" -m "output/waymo/$dataset" --skip_train
-   python metrics.py -m "output/waymo/$dataset"
+5. Run rendering and evaluation
+   Run rendering: python render.py -s "AD-GS/data/waymo/$dataset" -m "output/waymo/$dataset" --skip_train
+   Evaluate metrics: python metrics.py -m "output/waymo/$dataset"
