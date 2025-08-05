@@ -1,5 +1,5 @@
 # AD-GS
-1. Clone this repo: git clone https://github.com/OUC-voyage/AD-GS.git --recursive
+1. Clone this repo: git clone + Repository link.git --recursive
 
 2. Install dependencies:
    conda env create --file environment.yml
