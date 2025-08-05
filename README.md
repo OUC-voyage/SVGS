@@ -2,9 +2,7 @@
 1. Clone this repo: git clone https://github.com/OUC-voyage/AD-GS.git --recursive
 
 2. Install dependencies:
-
    conda env create --file environment.yml//
-
    conda activate AD_GS
    
 4. Due to the size of the dataset, we host it via an anonymous external link: https://drive.google.com/drive/folders/1Ch1iyiIHldGdVhuYf5JrVIMe7pCTiJpg?usp=drive_link
