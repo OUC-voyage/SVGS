@@ -33,8 +33,7 @@
     │   │       └──0/
 
     ...
-5. Run rendering and evaluation
-6. 
+5. 
    Run rendering: python render.py -s "AD-GS/data/waymo/$dataset" -m "output/waymo/$dataset" --skip_train
    
    Evaluate metrics: python metrics.py -m "output/waymo/$dataset"
