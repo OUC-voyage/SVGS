@@ -6,9 +6,9 @@
    
    conda activate AD_GS
    
-3. Due to the size of the dataset, we host it via an anonymous external link: https://drive.google.com/drive/folders/1Ch1iyiIHldGdVhuYf5JrVIMe7pCTiJpg?usp=drive_link
+3. Due to the size of the dataset, we host it via an anonymous external link: https://drive.google.com/drive/folders/1PGARZQe-bDbsGLTokuLObD09Ja3v-5tD?usp=drive_link
 
-   Due to the large size of the 3D scene PLY files required for inference, we provide the training results via an external anonymous link: https://drive.google.com/drive/folders/1IPYexCjijKZh8EKflaT3ImhiigX3HMCj?usp=drive_link
+   Due to the large size of the 3D scene PLY files required for inference, we provide the training results via an external anonymous link: https://drive.google.com/drive/folders/1AFzbn_fOO2jjPvzTwGQlHIjI7tDyQqOc?usp=drive_link
    
 4. First, create a data/ folder inside the project path by: mkdir data
 
