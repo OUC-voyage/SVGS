@@ -17,20 +17,35 @@
     data/
    
     ├── dataset_name
+   
     │   ├── scene1/
+   
     │   │   ├── images
+   
     │   │   │   ├── IMG_0.jpg
+   
     │   │   │   ├── IMG_1.jpg
+   
     │   │   │   ├── ...
+   
     │   │   ├── sparse/
+   
     │   │       └──0/
+   
     │   │   ├── depths
+   
     │   │   │   ├── IMG_0.jpg
+   
     │   │   │   ├── IMG_1.jpg
+   
     │   │   │   ├── ...
+   
     │   │   ├── mask
+   
     │   │   │   ├── IMG_0.jpg
+   
     │   │   │   ├── IMG_1.jpg
+   
     │   │   │   ├── ...
 
     ...
