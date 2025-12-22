@@ -4,7 +4,7 @@
 2. Install dependencies:
    conda env create --file environment.yml
    
-   conda activate AD_GS
+   conda activate SV_GS
    
 3. Due to the size of the dataset, we host it via an anonymous external link: https://drive.google.com/drive/folders/1PGARZQe-bDbsGLTokuLObD09Ja3v-5tD?usp=drive_link
 
