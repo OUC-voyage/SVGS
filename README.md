@@ -1,4 +1,4 @@
-# AD-GS
+# SV-GS
 1. Clone this repo: git clone + Repository link.git --recursive
 
 2. Install dependencies:
