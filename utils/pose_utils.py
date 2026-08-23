@@ -431,6 +431,53 @@ def get_rotation_matrix(axis, angle):
 
 
 
+def is_straight_motion(prev_cam, curr_cam, tau_x=0.01, tau_y=0.01):
+    t_prev = torch.tensor(prev_cam.T).float().cuda()
+    t_curr = torch.tensor(curr_cam.T).float().cuda()
+    R_prev = torch.tensor(prev_cam.R).float().cuda()
+
+    delta_t = R_prev.T @ (t_curr - t_prev)
+
+    # return (abs(delta_t[0]) < tau_x) and (abs(delta_t[1]) < tau_y)
+    delta_z = abs(delta_t[2].item())
+    if delta_z < 1e-6:
+        return False
+    return (abs(delta_t[0]) < tau_x * delta_z) and (abs(delta_t[1]) < tau_y * delta_z)
+
+
+import copy
+
+def generate_pseudo_view(viewpoint_cam, std=0.01):
+    cam = copy.copy(viewpoint_cam)
+
+    eps = np.random.normal(0, std)
+
+    R = torch.from_numpy(cam.R).float().cuda()
+    t = torch.from_numpy(cam.T).float().cuda()
+
+    ez = torch.tensor([0.0, 0.0, 1.0], device=R.device)
+
+    # 核心公式：t' = t + R * (ε * e_z)
+    t_new = t + R @ (eps * ez)
+
+    cam.T = t_new.detach().cpu().numpy() 
+
+    # 重新构建矩阵
+    cam.world_view_transform = torch.tensor(
+        getWorld2View2(cam.R, cam.T, cam.trans, cam.scale)
+    ).transpose(0, 1).cuda()
+
+    cam.full_proj_transform = (
+        cam.world_view_transform.unsqueeze(0)
+        .bmm(cam.projection_matrix.unsqueeze(0))
+    ).squeeze(0)
+
+    cam.camera_center = cam.world_view_transform.inverse()[3, :3]
+
+    return cam
+
+
+
 def gaussian_poses(viewpoint_cam, mean=0, std_dev_translation=0.003):
     # Translation Perturbation
     translate_z = np.random.normal(mean, std_dev_translation)

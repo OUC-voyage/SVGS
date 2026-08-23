@@ -374,6 +374,115 @@ def reproject_with_depth(depth_ref, intrinsics_ref, extrinsics_ref, depth_src, i
     y_reprojected = xy_reprojected[:, 1].reshape([batch, height, width]).float()
 
     return depth_reprojected, x_reprojected, y_reprojected, x_src, y_src
+
+
+def check_geometric_consistency(depth_ref, intrinsics_ref, extrinsics_ref, depth_src, intrinsics_src, extrinsics_src, thre1=1, thre2=0.01): # 新增
+    batch, height, width = depth_ref.shape
+    y_ref, x_ref = torch.meshgrid(torch.arange(0, height).to(depth_ref.device), torch.arange(0, width).to(depth_ref.device))
+    x_ref = x_ref.unsqueeze(0).repeat(batch,  1, 1)
+    y_ref = y_ref.unsqueeze(0).repeat(batch,  1, 1)
+    inputs = [depth_ref, intrinsics_ref, extrinsics_ref, depth_src, intrinsics_src, extrinsics_src]
+    outputs = reproject_with_depth(*inputs)
+    depth_reprojected, x2d_reprojected, y2d_reprojected, x2d_src, y2d_src = outputs
+    # check |p_reproj-p_1| < 1
+    dist = torch.sqrt((x2d_reprojected - x_ref) ** 2 + (y2d_reprojected - y_ref) ** 2)
+
+    # check |d_reproj-d_1| / d_1 < 0.01
+    depth_diff = torch.abs(depth_reprojected - depth_ref)
+    relative_depth_diff = depth_diff / depth_ref
+
+    mask = torch.logical_and(dist < thre1, relative_depth_diff < thre2)
+    depth_reprojected[~mask] = 0
+
+    return mask, depth_reprojected, x2d_src, y2d_src, relative_depth_diff
+"""
+def depth_propagation(viewpoint_cam, rendered_depth, viewpoint_stack, src_idxs, dataset, patch_size): # 新增
+    
+    depth_min = 0.1
+    if dataset == 'waymo':
+        depth_max = 80
+    elif dataset == '360':
+        depth_max = 20
+    else:
+        depth_max = 20
+
+    images = list()
+    intrinsics = list()
+    poses = list()
+    depth_intervals = list()
+    
+    images.append((viewpoint_cam.original_image * 255).permute((1, 2, 0)).to(torch.uint8))
+    intrinsics.append(viewpoint_cam.K)
+    poses.append(viewpoint_cam.world_view_transform.transpose(0, 1))
+    depth_interval = torch.tensor([depth_min, (depth_max-depth_min)/192.0, 192.0, depth_max])
+    depth_intervals.append(depth_interval)
+    
+    depth = rendered_depth.unsqueeze(-1)
+    normal = torch.zeros_like(depth)
+    
+    for idx, src_idx in enumerate(src_idxs):
+        src_viewpoint = viewpoint_stack[src_idx]
+        images.append((src_viewpoint.original_image * 255).permute((1, 2, 0)).to(torch.uint8))
+        intrinsics.append(src_viewpoint.K)
+        poses.append(src_viewpoint.world_view_transform.transpose(0, 1))
+        depth_intervals.append(depth_interval)
+        
+    images = torch.stack(images)
+    intrinsics = torch.stack(intrinsics)
+    poses = torch.stack(poses)
+    depth_intervals = torch.stack(depth_intervals)
+
+    results = propagate(images, intrinsics, poses, depth, normal, depth_intervals, patch_size)
+    propagated_depth = results[0].to(rendered_depth.device)
+    propagated_normal = results[1:4].to(rendered_depth.device).permute(1, 2, 0)
+    
+    return propagated_depth, propagated_normal
+"""
+
+def depth_propagation(viewpoint_cam, rendered_depth, viewpoint_stack, src_idxs, dataset, patch_size): # 新增
+    
+    depth_min = 0.1
+    if dataset == 'waymo':
+        depth_max = 80
+    elif dataset == '360':
+        depth_max = 20
+    else:
+        depth_max = 20
+
+    images = list()
+    intrinsics = list()
+    poses = list()
+    depth_intervals = list()
+    
+    images.append((viewpoint_cam.original_image * 255).permute((1, 2, 0)).to(torch.uint8))
+    intrinsics.append(viewpoint_cam.K)
+    poses.append(viewpoint_cam.world_view_transform.transpose(0, 1))
+    depth_interval = torch.tensor([depth_min, (depth_max-depth_min)/192.0, 192.0, depth_max])
+    depth_intervals.append(depth_interval)
+    
+    depth = rendered_depth.unsqueeze(-1)
+    normal = torch.zeros_like(depth)
+    
+    for idx, src_idx in enumerate(src_idxs):
+        src_viewpoint = viewpoint_stack[src_idx]
+        images.append((src_viewpoint.original_image * 255).permute((1, 2, 0)).to(torch.uint8))
+        intrinsics.append(src_viewpoint.K)
+        poses.append(src_viewpoint.world_view_transform.transpose(0, 1))
+        depth_intervals.append(depth_interval)
+        
+    images = torch.stack(images)
+    intrinsics = torch.stack(intrinsics)
+    poses = torch.stack(poses)
+    depth_intervals = torch.stack(depth_intervals)
+
+    results = propagate(images, intrinsics, poses, depth, normal, depth_intervals, patch_size)
+    propagated_depth = results[0].to(rendered_depth.device)
+    propagated_normal = results[1:4].to(rendered_depth.device).permute(1, 2, 0)
+    
+    return propagated_depth, propagated_normal
+
+
+
     
 def generate_edge_mask(propagated_depth, patch_size): # 新增
     # img gradient
