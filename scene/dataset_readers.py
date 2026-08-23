@@ -48,10 +48,10 @@ class CameraInfo(NamedTuple):
     depth_name_anything: str
     width: int
     height: int
-    K: np.array
-    sky_mask: np.array
-    normal: np.array
-    depth: np.array
+    K: np.array #新增
+    sky_mask: np.array #新增
+    normal: np.array #新增
+    depth: np.array #新增
     
 
 class SceneInfo(NamedTuple):
@@ -130,20 +130,20 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder, depths_fold
 
 
         # #sky mask
-        if sky_seg:
+        if sky_seg: #新增
             sky_path = image_path.replace("images", "mask")[:-4]+".npy"
             sky_mask = np.load(sky_path).astype(np.uint8)
         else:
             sky_mask = None
             
-        if load_normal:
+        if load_normal: #新增
             normal_path = image_path.replace("images", "normals")[:-4]+".npy"
             normal = np.load(normal_path).astype(np.float32)
             normal = (normal - 0.5) * 2.0
         else:
             normal = None
 
-        if load_depth:
+        if load_depth: #新增
             # depth_path = image_path.replace("images", "monodepth")[:-4]+".npy"
             depth_path = image_path.replace("images", "metricdepth")[:-4]+".npy"
             depth = np.load(depth_path).astype(np.float32)
@@ -233,7 +233,8 @@ def readColmapSceneInfo(path, images, depths, eval, lod, llffhold=8, sky_seg=Fal
     
     else:
         train_cam_infos = cam_infos
-        test_cam_infos = []
+        # test_cam_infos = []
+        test_cam_infos = [c for idx, c in enumerate(cam_infos) if idx % llffhold == 0]
 
     nerf_normalization = getNerfppNorm(train_cam_infos)
 

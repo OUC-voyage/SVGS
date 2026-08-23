@@ -29,9 +29,9 @@ class Camera(nn.Module):
         self.FoVx = FoVx
         self.FoVy = FoVy
         self.image_name = image_name
-        self.sky_mask = sky_mask
-        self.normal = normal
-        self.depth = depth
+        self.sky_mask = sky_mask #新增
+        self.normal = normal #新增
+        self.depth = depth #新增
         self.gt_depth = gt_depth
 
         try:
@@ -50,7 +50,7 @@ class Camera(nn.Module):
         else:
             self.original_image *= torch.ones((1, self.image_height, self.image_width), device=self.data_device)
 
-        self.K = torch.tensor([[K[0], 0, K[2]], 
+        self.K = torch.tensor([[K[0], 0, K[2]], #新增
                                [0, K[1], K[3]],
                                [0, 0, 1]]).to(self.data_device).to(torch.float32)
 
