@@ -30,9 +30,6 @@ from utils.general_utils import safe_state
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
 from gaussian_renderer import GaussianModel
-from os import makedirs
-from utils.general_utils import safe_state, vis_depth
-import imageio
 
 def render_set(model_path, name, iteration, views, gaussians, pipeline, background):
     render_path = os.path.join(model_path, name, "ours_{}".format(iteration), "renders")
@@ -53,8 +50,13 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     per_view_dict = {}
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
         
+        torch.cuda.synchronize();t_start = time.time()
+        
         voxel_visible_mask = prefilter_voxel(view, gaussians, pipeline, background)
         render_pkg = render(view, gaussians, pipeline, background, return_depth=True, return_normal=True, visible_mask=voxel_visible_mask)
+        torch.cuda.synchronize();t_end = time.time()
+
+        t_list.append(t_end - t_start)
 
         # renders
         rendering = torch.clamp(render_pkg["render"], 0.0, 1.0)
@@ -77,15 +79,42 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
 
         # 新增从这到for循环结束,本来这段在with open的上面。
         render_depth = render_pkg["render_depth"]
-        # 将天空区域设置为300
         if view.sky_mask is not None:
             render_depth[~(view.sky_mask.to(render_depth.device).to(torch.bool))] = 300
-        # 保存原始 float32 深度数组（例如 .npy 格式）
-        raw_depth_np = render_depth.detach().cpu().numpy()
-        np.save(os.path.join(depth_path, '{0:05d}.npy'.format(idx)), raw_depth_np)
-        # 再可视化成伪彩色图像
-        render_depth_vis = vis_depth(raw_depth_np)[0]
-        imageio.imwrite(os.path.join(depth_path , '{0:05d}.png'.format(idx)), render_depth_vis)
+        render_depth = vis_depth(render_depth.detach().cpu().numpy())[0]
+        imageio.imwrite(os.path.join(depth_path , '{0:05d}'.format(idx) + ".png"), render_depth)
+
+
+
+        # ===== 新增：DepthAnything 风格的近亮远暗灰度深度图 =====
+
+        # 注意：这里重新从 render_pkg 取一次，避免被 vis_depth 覆盖
+        render_depth_nb = render_pkg["render_depth"].clone()
+
+        if view.sky_mask is not None:
+            render_depth_nb[~(view.sky_mask.to(render_depth_nb.device).to(torch.bool))] = 300.0
+
+        d = render_depth_nb.detach().cpu().numpy()
+
+        # min-max 归一化
+        d_min = d.min()
+        d_max = d.max()
+        d_norm = (d - d_min) / (d_max - d_min + 1e-8)
+
+        # 反转：近亮远暗
+        d_inv = 1.0 - d_norm
+
+        # 映射到 0–255
+        depth_gray = (d_inv * 255.0).clip(0, 255).astype("uint8")
+        print(depth_gray.min(), depth_gray.max())
+
+        # 用不同文件名，避免覆盖
+        imageio.imwrite(
+            os.path.join(depth_path, f"{idx:05d}_nearbright.png"),
+            depth_gray
+        )
+
+
 
         render_normal = (render_pkg["render_normal"] + 1.0) / 2.0
         if view.sky_mask is not None:
@@ -98,6 +127,10 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         # torchvision.utils.save_image(render_normal_gt, os.path.join(normal_path, '{0:05d}'.format(idx) + "_normalgt.png"))
         # exit()
         per_view_dict['{0:05d}'.format(idx) + ".png"] = visible_count.item()
+    
+    t = np.array(t_list[5:])
+    fps = 1.0 / t.mean()
+    print(f'Test FPS: \033[1;35m{fps:.5f}\033[0m')
 
     with open(os.path.join(model_path, name, "ours_{}".format(iteration), "per_view_count.json"), 'w') as fp:
             json.dump(per_view_dict, fp, indent=True)
@@ -123,12 +156,14 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
         if not skip_train:
             t_train_list, visible_count  = render_set(dataset.model_path, "train", scene.loaded_iter, scene.getTrainCameras(), gaussians, pipeline, background)
             train_fps = 1.0 / torch.tensor(t_train_list[5:]).mean()
+            logger.info(f'Train FPS: \033[1;35m{train_fps.item():.5f}\033[0m')
             if wandb is not None:
                 wandb.log({"train_fps":train_fps.item(), })
 
         if not skip_test:
             t_test_list, visible_count = render_set(dataset.model_path, "test", scene.loaded_iter, scene.getTestCameras(), gaussians, pipeline, background)
             test_fps = 1.0 / torch.tensor(t_test_list[5:]).mean()
+            logger.info(f'Test FPS: \033[1;35m{test_fps.item():.5f}\033[0m')
             if tb_writer:
                 tb_writer.add_scalar(f'{dataset_name}/test_FPS', test_fps.item(), 0)
             if wandb is not None:
