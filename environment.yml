@@ -1,0 +1,41 @@
+name: SVGS
+channels:
+  - pytorch
+  - pyg
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7.13
+  - pip=24.0
+  - cudatoolkit=11.6
+  - pytorch=1.12.1
+  - torchvision=0.13.1
+  - torchaudio=0.12.1
+  - pytorch-scatter=2.1.0
+  - numpy=1.21.6
+  - plyfile=0.8.1
+  - tqdm
+  - pip:
+    - einops==0.6.1
+    - wandb==0.18.5
+    - lpips==0.1.4
+    - laspy==2.5.0
+    - opencv-python==4.6.0
+    - open3d==0.17.0
+    - matplotlib==3.5.3
+    - imageio==2.31.2
+    - imageio-ffmpeg==0.5.1
+    - tensorboard==2.11.2
+    - torchmetrics==0.11.4
+    - scikit-learn==1.0.2
+    - scipy==1.7.3
+    - pandas==1.3.5
+    - pyquaternion==0.9.9
+    - icecream==2.1.3
+    - jaxtyping==0.2.12
+    - typeguard==4.1.2
+    - colorama==0.4.6
+    - Pillow==9.5.0
+    - submodules/diff-gaussian-rasterization
+    - submodules/simple-knn
+    - submodules/Propagation
